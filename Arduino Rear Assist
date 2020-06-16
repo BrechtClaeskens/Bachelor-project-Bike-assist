@@ -1,0 +1,216 @@
+Rear Assist Arduino
+
+  #include <ComponentObject.h>
+#include <RangeSensor.h>
+#include <SparkFun_VL53L1X.h>
+#include <vl53l1x_class.h>
+#include <vl53l1_error_codes.h>
+
+
+#include <Wire.h>
+#include "SparkFun_VL53L1X.h"
+
+//Optional interrupt and shutdown pins.
+#define SHUTDOWN_PIN 2
+#define INTERRUPT_PIN 3
+
+SFEVL53L1X distanceSensor;
+//Uncomment the following line to use the optional shutdown and interrupt pins.
+//SFEVL53L1X distanceSensor(Wire, SHUTDOWN_PIN, INTERRUPT_PIN);
+
+const int ledPin = 3; //brake
+int ledPin3 = 8;// terminal middle
+int ledPin4 = 9;// terminal left
+int ledPin5 = 10;//terminal right
+int val1 = 0; // var lees pin status button
+int val2 = 0; // var lees pin status button
+int inPin = 12; // buttonPin
+int inPin2 = 11; // buttonPin
+const int DUTY = 300;
+const int DUTY2 = 60;
+int ledPin1 = 5;
+int sensorPin1= 7;
+int sensorValue;
+int lastTiltState = HIGH; // the previous reading from the tilt sensor
+
+// the following variables are long's because the time, measured in miliseconds,
+// will quickly become a bigger number than can be stored in an int.
+long lastDebounceTime = 0; // the last time the output pin was toggled
+long debounceDelay = 50; // the debounce time; increase if the output flickers
+
+int ledPin2 = 4;
+int sensorPin2= 6;
+int sensorValue2;
+int lastTiltState2 = HIGH; // the previous reading from the tilt sensor
+
+// the following variables are long's because the time, measured in miliseconds,
+// will quickly become a bigger number than can be stored in an int.
+long lastDebounceTime2 = 0; // the last time the output pin was toggled
+long debounceDelay2 = 50; // the debounce time; increase if the output flickers
+void setup(void)
+{
+  Wire.begin();
+
+  Serial.begin(9600);
+  Serial.println("VL53L1X Qwiic Test");
+pinMode(ledPin, OUTPUT);
+  if (distanceSensor.begin() == 0) //Begin returns 0 on a good init
+  {
+    Serial.println("Sensor online!");
+  }
+  pinMode(sensorPin1, INPUT);
+digitalWrite(sensorPin1, HIGH);
+pinMode(ledPin1, OUTPUT);
+  pinMode(sensorPin2, INPUT);
+digitalWrite(sensorPin2, HIGH);
+pinMode(ledPin2, OUTPUT);
+pinMode(inPin, INPUT);
+pinMode(inPin2, INPUT);
+}
+void loop() {
+ brakeLoopCode();
+ blinkLoopCode1();
+ blinkLoopCode2();
+  blinkButtonCode1();
+    blinkButtonCode2();
+}
+void brakeLoopCode() {
+  distanceSensor.startRanging(); //Write configuration bytes to initiate measurement
+  while (!distanceSensor.checkForDataReady()) {
+    delay(1);
+  }
+  int distance = distanceSensor.getDistance(); //Get the result of the measurement from the sensor
+  distanceSensor.clearInterrupt();
+  distanceSensor.stopRanging();
+if (distance < 20){
+  analogWrite(ledPin,DUTY);
+ delay(100);
+}
+
+if (distance > 19){
+  analogWrite(ledPin,DUTY2); 
+  delay(100);
+}
+if (distance < 19){
+  digitalWrite(ledPin,LOW); 
+  
+}
+if (distance < 19){
+  digitalWrite(ledPin3,LOW); 
+  
+}
+else{
+  digitalWrite(ledPin3,DUTY);
+  }
+
+
+
+  Serial.print("Distance(mm): ");
+  Serial.print(distance);
+
+  float distanceInches = distance * 0.0393701;
+  float distanceFeet = distanceInches / 12.0;
+
+  Serial.print("\tDistance(ft): ");
+  Serial.print(distanceFeet, 2);
+
+  Serial.println();
+}
+void blinkButtonCode1(){
+val1 = digitalRead(inPin); 
+if (val1 == HIGH){
+  digitalWrite(ledPin1,HIGH);
+  }
+  else{
+   digitalWrite(ledPin1, lastTiltState);
+   }
+    if (val1 == HIGH){
+  digitalWrite(ledPin5,HIGH);
+  }
+   else{
+   digitalWrite(ledPin5, lastTiltState );
+   }
+}
+
+void blinkLoopCode1() {
+ sensorValue = digitalRead(sensorPin1);
+// If the switch changed, due to noise or pressing:
+if (sensorValue == lastTiltState) {
+// reset the debouncing timer
+lastDebounceTime = millis();
+}
+if ((millis() - lastDebounceTime) > debounceDelay) {
+// whatever the reading is at, it's been there for longer
+// than the debounce delay, so take it as the actual current state:
+lastTiltState = sensorValue;
+}
+digitalWrite(ledPin1, lastTiltState);
+
+Serial.println(sensorValue);
+//delay(500);
+// terminal
+ sensorValue = digitalRead(sensorPin1);
+// If the switch changed, due to noise or pressing:
+if (sensorValue == lastTiltState) {
+// reset the debouncing timer
+lastDebounceTime = millis();
+}
+if ((millis() - lastDebounceTime) > debounceDelay) {
+// whatever the reading is at, it's been there for longer
+// than the debounce delay, so take it as the actual current state:
+lastTiltState = sensorValue;
+}
+digitalWrite(ledPin5, lastTiltState);
+
+Serial.println(sensorValue);
+//delay(500);
+}
+void blinkButtonCode2(){
+val2 = digitalRead(inPin2); 
+if (val2 == HIGH){
+  digitalWrite(ledPin2,HIGH);
+  }
+  else{
+   digitalWrite(ledPin2, lastTiltState2);
+   }
+   if (val2 == HIGH){
+  digitalWrite(ledPin4,HIGH);
+  }
+   else{
+   digitalWrite(ledPin4, lastTiltState2);
+   }
+   
+}
+void blinkLoopCode2() {
+ sensorValue2 = digitalRead(sensorPin2);
+// If the switch changed, due to noise or pressing:
+if (sensorValue2 == lastTiltState2) {
+// reset the debouncing timer
+lastDebounceTime2 = millis();
+}
+if ((millis() - lastDebounceTime2) > debounceDelay2) {
+// whatever the reading is at, it's been there for longer
+// than the debounce delay, so take it as the actual current state:
+lastTiltState2 = sensorValue2;
+}
+digitalWrite(ledPin2, lastTiltState2);
+
+Serial.println(sensorValue2);
+//delay(500);
+//terminal
+ sensorValue2 = digitalRead(sensorPin2);
+// If the switch changed, due to noise or pressing:
+if (sensorValue2 == lastTiltState2) {
+// reset the debouncing timer
+lastDebounceTime2 = millis();
+}
+if ((millis() - lastDebounceTime2) > debounceDelay2) {
+// whatever the reading is at, it's been there for longer
+// than the debounce delay, so take it as the actual current state:
+lastTiltState2 = sensorValue2;
+}
+digitalWrite(ledPin4, lastTiltState2);
+
+Serial.println(sensorValue2);
+//delay(500);
+}
